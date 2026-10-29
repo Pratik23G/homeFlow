@@ -1,21 +1,26 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import { createConsultation, getAvailableSlots } from "@/app/book/actions";
 import { BOOKING_WINDOW_DAYS, CITIES } from "@/lib/content";
+import { supabaseBrowser } from "@/lib/supabase/browser";
+
+const BUSINESS_TZ = "America/Los_Angeles";
+const MAX_PHOTOS = 5;
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
+type Slot = { startsAt: string; endsAt: string };
+const ymd = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const fmtSlot = (iso: string) =>
+  new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: BUSINESS_TZ });
+const fmtSlotDay = (iso: string) =>
+  new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: BUSINESS_TZ });
 
 const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-// Static placeholder availability: 9:00 to 16:30, every 30 minutes, Mon-Sat.
-const SLOTS = Array.from({ length: 16 }, (_, i) => {
-  const mins = 9 * 60 + i * 30;
-  return { h: Math.floor(mins / 60), m: mins % 60 };
-});
-
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const sameDay = (a: Date, b: Date) => a.getTime() === b.getTime();
-const fmtTime = (h: number, m: number) =>
-  `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
-
 const subscribe = () => () => {};
 
 /** Render only on the client so "today" never mismatches server HTML. */
@@ -28,10 +33,60 @@ export function BookingForm() {
 function BookingFormInner({ today }: { today: Date }) {
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [day, setDay] = useState<Date | null>(null);
-  const [slot, setSlot] = useState<string | null>(null);
+  const [slots, setSlots] = useState<Slot[] | null>(null);
+  const [slot, setSlot] = useState<Slot | null>(null);
   const [city, setCity] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ startsAt: string; meetUrl: string | null; photosFailed: boolean } | null>(null);
+  const latestDay = useRef<string | null>(null);
+
+  async function pickDay(d: Date) {
+    const key = ymd(d);
+    latestDay.current = key;
+    setDay(d);
+    setSlot(null);
+    setSlots(null);
+    const result = await getAvailableSlots(key);
+    if (latestDay.current === key) setSlots(result); // ignore stale responses
+  }
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!day || !slot) return;
+    const f = new FormData(e.currentTarget);
+    setSubmitting(true);
+    setError(null);
+    const res = await createConsultation({
+      name: String(f.get("name") ?? ""),
+      email: String(f.get("email") ?? ""),
+      phone: String(f.get("phone") ?? ""),
+      city,
+      description: String(f.get("what") ?? ""),
+      date: ymd(day),
+      startsAt: slot.startsAt,
+      photos: photos.map((p) => ({ name: p.name, type: p.type, size: p.size })),
+      website: String(f.get("website") ?? ""),
+    });
+    if (!res.ok) {
+      setError(res.message);
+      setSubmitting(false);
+      if (res.code === "slot_taken") await pickDay(day); // refresh the list
+      return;
+    }
+    let photosFailed = false;
+    if (res.uploads.length) {
+      const storage = supabaseBrowser().storage.from("consult-photos");
+      const results = await Promise.all(
+        res.uploads.map((u, i) => storage.uploadToSignedUrl(u.path, u.token, photos[i])),
+      );
+      photosFailed = results.some((r) => r.error);
+    }
+    setDone({ startsAt: res.startsAt, meetUrl: res.meetUrl, photosFailed });
+    setSubmitting(false);
+  }
 
   const lastDay = addDays(today, BOOKING_WINDOW_DAYS);
 
@@ -45,19 +100,26 @@ function BookingFormInner({ today }: { today: Date }) {
   ];
 
   const isBookable = (d: Date) => d >= today && d <= lastDay && d.getDay() !== 0;
-  const slotLabel = slot ? fmtTime(...(slot.split(":").map(Number) as [number, number])) : null;
-  const dayLabel = day?.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-
-  if (submitted) {
+  if (done) {
     return (
       <div className="mt-10 rounded-lg border border-gold p-8">
-        <h2 className="font-serif text-3xl font-semibold">Thanks, this is a preview</h2>
+        <h2 className="font-serif text-3xl font-semibold">Request received</h2>
         <p className="mt-3 text-muted">
-          The booking page is static for now, so nothing was saved or sent. Backend is coming in a later phase.
+          Your free consult is booked for {fmtSlotDay(done.startsAt)} at {fmtSlot(done.startsAt)} Pacific.
+          {done.meetUrl
+            ? " A calendar invite with the video call link is on its way to your email."
+            : " Nick will email you the video call link shortly."}
         </p>
-        <button onClick={() => setSubmitted(false)} className="mt-6 text-gold underline">
-          Back to the form
-        </button>
+        {done.meetUrl && (
+          <a href={done.meetUrl} className="mt-4 inline-block break-all text-gold underline">
+            {done.meetUrl}
+          </a>
+        )}
+        {done.photosFailed && (
+          <p className="mt-3 text-sm text-gold">
+            Some photos did not upload. You can show them to Nick on the call or reply to his email with them.
+          </p>
+        )}
       </div>
     );
   }
@@ -69,12 +131,10 @@ function BookingFormInner({ today }: { today: Date }) {
   return (
     <form
       className="mt-10 grid gap-10 lg:grid-cols-[1fr_340px]"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSubmitted(true);
-      }}
+      onSubmit={onSubmit}
     >
       <div className="space-y-10">
+        <input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
         {/* 1. Day */}
         <section>
           <h2 className="mb-4 font-serif text-2xl font-semibold">1. Pick a day</h2>
@@ -112,10 +172,7 @@ function BookingFormInner({ today }: { today: Date }) {
                     key={i}
                     type="button"
                     disabled={!isBookable(d)}
-                    onClick={() => {
-                      setDay(d);
-                      setSlot(null);
-                    }}
+                    onClick={() => pickDay(d)}
                     className={`aspect-square rounded-md text-sm transition-colors disabled:text-white/20 ${
                       day && sameDay(day, d)
                         ? "bg-gold font-semibold text-black"
@@ -132,33 +189,37 @@ function BookingFormInner({ today }: { today: Date }) {
               )}
             </div>
           </div>
-          <p className="mt-2 text-xs text-muted">Bookings open up to {BOOKING_WINDOW_DAYS} days ahead. Times shown are placeholders.</p>
+          <p className="mt-2 text-xs text-muted">Bookings open up to {BOOKING_WINDOW_DAYS} days ahead.</p>
         </section>
 
         {/* 2. Time */}
         <section>
           <h2 className="mb-4 font-serif text-2xl font-semibold">2. Pick a 30-minute time</h2>
-          {day ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {SLOTS.map(({ h, m }) => {
-                const v = `${h}:${m}`;
-                return (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setSlot(v)}
-                    className={`rounded-md border px-3 py-2.5 text-sm transition-colors ${
-                      slot === v ? "border-gold bg-gold font-semibold text-black" : "border-line hover:border-gold"
-                    }`}
-                  >
-                    {fmtTime(h, m)}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
+          {!day ? (
             <p className="text-sm text-muted">Choose a day first.</p>
+          ) : slots === null ? (
+            <p className="text-sm text-muted">Loading times...</p>
+          ) : slots.length === 0 ? (
+            <p className="text-sm text-muted">No times open that day. Try another date.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {slots.map((s) => (
+                <button
+                  key={s.startsAt}
+                  type="button"
+                  onClick={() => setSlot(s)}
+                  className={`rounded-md border px-3 py-2.5 text-sm transition-colors ${
+                    slot?.startsAt === s.startsAt
+                      ? "border-gold bg-gold font-semibold text-black"
+                      : "border-line hover:border-gold"
+                  }`}
+                >
+                  {fmtSlot(s.startsAt)}
+                </button>
+              ))}
+            </div>
           )}
+          <p className="mt-2 text-xs text-muted">Times are Pacific.</p>
         </section>
 
         {/* 3. Details */}
@@ -167,15 +228,15 @@ function BookingFormInner({ today }: { today: Date }) {
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label className={label} htmlFor="name">Name</label>
-              <input id="name" required autoComplete="name" className={input} />
+              <input id="name" name="name" required autoComplete="name" className={input} />
             </div>
             <div>
               <label className={label} htmlFor="email">Email</label>
-              <input id="email" type="email" required autoComplete="email" className={input} />
+              <input id="email" name="email" type="email" required autoComplete="email" className={input} />
             </div>
             <div>
               <label className={label} htmlFor="phone">Phone</label>
-              <input id="phone" type="tel" required autoComplete="tel" className={input} />
+              <input id="phone" name="phone" type="tel" required autoComplete="tel" className={input} />
             </div>
             <div>
               <label className={label} htmlFor="city">City</label>
@@ -194,7 +255,7 @@ function BookingFormInner({ today }: { today: Date }) {
             </div>
             <div className="sm:col-span-2">
               <label className={label} htmlFor="what">What do you want fixed?</label>
-              <textarea id="what" required rows={5} className={input} placeholder="e.g. Pantry is a mess, cabinet door hangs crooked, want better counter flow..." />
+              <textarea id="what" name="what" required maxLength={2000} rows={5} className={input} placeholder="e.g. Pantry is a mess, cabinet door hangs crooked, want better counter flow..." />
             </div>
             <div className="sm:col-span-2">
               <label className={label} htmlFor="photos">Kitchen photos (optional)</label>
@@ -203,12 +264,23 @@ function BookingFormInner({ today }: { today: Date }) {
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={(e) => setPhotos(Array.from(e.target.files ?? []))}
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  if (files.length > MAX_PHOTOS || files.some((f) => f.size > MAX_PHOTO_BYTES)) {
+                    setPhotoError(`Up to ${MAX_PHOTOS} photos, 10 MB each.`);
+                    e.target.value = "";
+                    setPhotos([]);
+                    return;
+                  }
+                  setPhotoError(null);
+                  setPhotos(files);
+                }}
                 className="block w-full text-sm text-muted file:mr-4 file:rounded-full file:border-0 file:bg-gold file:px-4 file:py-2 file:font-semibold file:text-black"
               />
               {photos.length > 0 && (
-                <p className="mt-2 text-xs text-muted">{photos.length} photo(s) selected (not uploaded yet)</p>
+                <p className="mt-2 text-xs text-muted">{photos.length} photo(s) selected</p>
               )}
+              {photoError && <p className="mt-2 text-sm text-gold">{photoError}</p>}
             </div>
           </div>
         </section>
@@ -224,11 +296,11 @@ function BookingFormInner({ today }: { today: Date }) {
           </div>
           <div>
             <dt className="text-muted">When</dt>
-            <dd>{dayLabel && slotLabel ? `${dayLabel}, ${slotLabel}` : "Not selected yet"}</dd>
+            <dd>{slot ? `${fmtSlotDay(slot.startsAt)}, ${fmtSlot(slot.startsAt)} PT` : "Not selected yet"}</dd>
           </div>
           <div>
             <dt className="text-muted">Where</dt>
-            <dd>Google Meet link sent by email</dd>
+            <dd>Video call (Google Meet), link sent by email</dd>
           </div>
           <div>
             <dt className="text-muted">Cost</dt>
@@ -237,11 +309,12 @@ function BookingFormInner({ today }: { today: Date }) {
         </dl>
         <button
           type="submit"
-          disabled={!day || !slot || city === "other"}
+          disabled={!day || !slot || city === "other" || submitting}
           className="mt-6 w-full rounded-full bg-gold px-6 py-3 font-semibold text-black transition-colors hover:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Request free consult
+          {submitting ? "Sending..." : "Request free consult"}
         </button>
+        {error && <p className="mt-3 text-sm text-gold">{error}</p>}
       </aside>
     </form>
   );
