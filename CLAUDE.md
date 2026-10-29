@@ -37,7 +37,7 @@ Secrets go in `.env.local` only. Never commit them.
 - Avoid `new Date()` in server components (breaks prerender); compute dates client-side.
 
 ## Status
-Phase 1 done: landing page + static `/book` UI (no backend). Next: Supabase schema, saving consult requests, Google Calendar/Meet.
+Phase 1 done: landing page + static `/book` UI. Phase 2 done: Supabase schema in `supabase/migrations/0001_init.sql` (tested on Postgres via pglite). Next: connect `/book` to Supabase (save consult requests), then Google Calendar/Meet.
 
 ## Run
 `npm run dev` -> http://localhost:3000 ; `npm run lint` ; `npm run build`
