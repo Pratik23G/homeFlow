@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { getSlotsForDate, type Slot } from "@/lib/availability";
+import { sendClientConfirmation, sendOwnerNotification } from "@/lib/email";
 import { createMeetEvent } from "@/lib/google";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -31,7 +32,7 @@ export type ConsultInput = {
 };
 
 export type ConsultResult =
-  | { ok: true; startsAt: string; meetUrl: string | null; uploads: { path: string; token: string }[] }
+  | { ok: true; startsAt: string; endsAt: string; meetUrl: string | null; uploads: { path: string; token: string }[] }
   | { ok: false; code: "invalid" | "outside_area" | "slot_taken" | "server"; message: string };
 
 const fail = (code: Extract<ConsultResult, { ok: false }>["code"], message: string): ConsultResult => ({
@@ -42,7 +43,7 @@ const fail = (code: Extract<ConsultResult, { ok: false }>["code"], message: stri
 
 export async function createConsultation(input: ConsultInput): Promise<ConsultResult> {
   // Bots fill the hidden field; pretend success without saving anything.
-  if (input.website) return { ok: true, startsAt: input.startsAt, meetUrl: null, uploads: [] };
+  if (input.website) return { ok: true, startsAt: input.startsAt, endsAt: input.startsAt, meetUrl: null, uploads: [] };
 
   const name = input.name?.trim();
   const email = input.email?.trim().toLowerCase();
@@ -146,7 +147,23 @@ export async function createConsultation(input: ConsultInput): Promise<ConsultRe
       uploads.push({ path, token: data.token });
     }
 
-    return { ok: true, startsAt: slot.startsAt, meetUrl, uploads };
+    // Emails are best effort too: a failed send is logged, never shown as a failed booking.
+    const results = await Promise.allSettled([
+      sendClientConfirmation({ to: email, name, startsAt: slot.startsAt, endsAt: slot.endsAt, meetUrl }),
+      sendOwnerNotification({
+        name,
+        email,
+        phone,
+        city: cityRow.name,
+        description,
+        startsAt: slot.startsAt,
+        meetUrl,
+        photoCount: uploads.length,
+      }),
+    ]);
+    results.forEach((r) => r.status === "rejected" && console.error("Email failed", r.reason));
+
+    return { ok: true, startsAt: slot.startsAt, endsAt: slot.endsAt, meetUrl, uploads };
   } catch (e) {
     console.error("createConsultation failed", e);
     return fail("server", "Something went wrong on our end. Please try again in a moment.");

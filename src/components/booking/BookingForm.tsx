@@ -2,6 +2,7 @@
 
 import { useRef, useState, useSyncExternalStore } from "react";
 import { createConsultation, getAvailableSlots } from "@/app/book/actions";
+import { CAL_TITLE, googleCalendarUrl } from "@/lib/calendar";
 import { BOOKING_WINDOW_DAYS, CITIES } from "@/lib/content";
 import { supabaseBrowser } from "@/lib/supabase/browser";
 
@@ -14,6 +15,31 @@ const ymd = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const fmtSlot = (iso: string) =>
   new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: BUSINESS_TZ });
+const icsStamp = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+function downloadIcs(startsAt: string, endsAt: string, meetUrl: string | null) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//HomeFlow//Consult//EN",
+    "BEGIN:VEVENT",
+    `UID:${icsStamp(startsAt)}-${Math.random().toString(36).slice(2)}@homeflow`,
+    `DTSTAMP:${icsStamp(new Date().toISOString())}`,
+    `DTSTART:${icsStamp(startsAt)}`,
+    `DTEND:${icsStamp(endsAt)}`,
+    `SUMMARY:${CAL_TITLE}`,
+    ...(meetUrl ? [`LOCATION:${meetUrl}`, `DESCRIPTION:Join the video call: ${meetUrl}`] : []),
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+  const url = URL.createObjectURL(new Blob([lines.join("\r\n")], { type: "text/calendar" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "homeflow-consult.ics";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const fmtSlotDay = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: BUSINESS_TZ });
 
@@ -40,7 +66,7 @@ function BookingFormInner({ today }: { today: Date }) {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ startsAt: string; meetUrl: string | null; photosFailed: boolean } | null>(null);
+  const [done, setDone] = useState<{ startsAt: string; endsAt: string; meetUrl: string | null; photosFailed: boolean } | null>(null);
   const latestDay = useRef<string | null>(null);
 
   async function pickDay(d: Date) {
@@ -84,7 +110,7 @@ function BookingFormInner({ today }: { today: Date }) {
       );
       photosFailed = results.some((r) => r.error);
     }
-    setDone({ startsAt: res.startsAt, meetUrl: res.meetUrl, photosFailed });
+    setDone({ startsAt: res.startsAt, endsAt: res.endsAt, meetUrl: res.meetUrl, photosFailed });
     setSubmitting(false);
   }
 
@@ -107,7 +133,7 @@ function BookingFormInner({ today }: { today: Date }) {
         <p className="mt-3 text-muted">
           Your free consult is booked for {fmtSlotDay(done.startsAt)} at {fmtSlot(done.startsAt)} Pacific.
           {done.meetUrl
-            ? " A calendar invite with the video call link is on its way to your email."
+            ? " Save the link below or add it to your calendar. Google also emails you an invite."
             : " Nick will email you the video call link shortly."}
         </p>
         {done.meetUrl && (
@@ -115,6 +141,23 @@ function BookingFormInner({ today }: { today: Date }) {
             {done.meetUrl}
           </a>
         )}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <a
+            href={googleCalendarUrl(done.startsAt, done.endsAt, done.meetUrl)}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-gold px-6 py-3 text-center text-sm font-semibold text-black hover:bg-gold-dark"
+          >
+            Add to Google Calendar
+          </a>
+          <button
+            type="button"
+            onClick={() => downloadIcs(done.startsAt, done.endsAt, done.meetUrl)}
+            className="rounded-full border border-gold px-6 py-3 text-sm font-semibold text-gold hover:bg-gold hover:text-black"
+          >
+            Apple / Outlook (.ics)
+          </button>
+        </div>
         {done.photosFailed && (
           <p className="mt-3 text-sm text-gold">
             Some photos did not upload. You can show them to Nick on the call or reply to his email with them.
