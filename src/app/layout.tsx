@@ -24,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${manrope.variable} ${montserrat.variable} antialiased`}
     >
       <body className="min-h-screen bg-black text-white">{children}</body>

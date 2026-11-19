@@ -21,14 +21,15 @@ export async function getSlotsForDate(dateStr: string): Promise<Slot[]> {
   const db = supabaseAdmin();
   const now = new Date();
   const today = localDateString(now);
-  const windowDays = await getConfigNumber("booking_window_days", 90);
-  if (dateStr < today || dateStr > addDaysStr(today, windowDays)) return [];
+  if (dateStr < today) return [];
 
-  const consultMinutes = await getConfigNumber("consult_minutes", 30);
-  const { data: hours } = await db
-    .from("working_hours")
-    .select("start_time,end_time")
-    .eq("weekday", weekdayOf(dateStr));
+  // Independent lookups: run them together instead of one after another.
+  const [windowDays, consultMinutes, { data: hours }] = await Promise.all([
+    getConfigNumber("booking_window_days", 90),
+    getConfigNumber("consult_minutes", 30),
+    db.from("working_hours").select("start_time,end_time").eq("weekday", weekdayOf(dateStr)),
+  ]);
+  if (dateStr > addDaysStr(today, windowDays)) return [];
   if (!hours?.length) return [];
 
   // Candidate slots from working hours.
