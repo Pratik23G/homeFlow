@@ -1,4 +1,4 @@
-import { Placeholder } from "../Placeholder";
+import Image from "next/image";
 import { SectionHeading } from "../SectionHeading";
 import { BOOKING_WINDOW_DAYS, DEPOSIT } from "@/lib/content";
 
@@ -11,7 +11,16 @@ const steps = [
 export function HowItWorks() {
   return (
     <section id="how" className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 lg:grid-cols-2">
-      <Placeholder label="Nick organizing a pantry" className="aspect-[4/3] w-full" />
+      {/* Stock stand-in: swap for a photo of Nick at work. */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-line">
+        <Image
+          src="/images/stock/bright-kitchen.webp"
+          alt="Open, well-organized kitchen with an island and pendant lights"
+          fill
+          sizes="(min-width: 1024px) 560px, 100vw"
+          className="object-cover"
+        />
+      </div>
       <div>
         <SectionHeading eyebrow="A simple process" title="How it works" />
         <ol className="mt-8 space-y-6">
