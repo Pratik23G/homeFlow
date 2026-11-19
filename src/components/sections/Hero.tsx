@@ -1,5 +1,5 @@
 import { Button } from "../Button";
-import { Placeholder } from "../Placeholder";
+import Image from "next/image";
 
 export function Hero() {
   return (
@@ -22,7 +22,16 @@ export function Hero() {
           30-minute video call · No payment · Estimate from Nick on the call
         </p>
       </div>
-      <Placeholder label="finished kitchen, hero image" className="aspect-[4/5] w-full" />
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-lg border border-line">
+        <Image
+          src="/images/stock/hero-kitchen.webp"
+          alt="Bright white kitchen with organized cabinets and a farmhouse sink"
+          fill
+          priority
+          sizes="(min-width: 1024px) 560px, 100vw"
+          className="object-cover"
+        />
+      </div>
     </section>
   );
 }

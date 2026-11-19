@@ -1,6 +1,12 @@
 import { Button } from "../Button";
-import { Placeholder } from "../Placeholder";
+import Image from "next/image";
 import { SectionHeading } from "../SectionHeading";
+
+const tiles = [
+  { src: "/images/stock/organized-drawer.webp", alt: "Utensil drawer with wooden dividers", label: "Organized storage" },
+  { src: "/images/stock/faucet.webp", alt: "Close-up of a chrome kitchen faucet", label: "Updated fixtures" },
+  { src: "/images/stock/kitchen-layout.webp", alt: "Modern white kitchen with a central island", label: "Better layouts" },
+];
 
 export function Showcase() {
   return (
@@ -16,9 +22,14 @@ export function Showcase() {
         </div>
       </div>
       <div className="mt-10 grid gap-5 sm:grid-cols-3">
-        <Placeholder label="organized pantry" className="aspect-[4/5]" />
-        <Placeholder label="new fixtures installed" className="aspect-[4/5]" />
-        <Placeholder label="reworked kitchen layout" className="aspect-[4/5]" />
+        {tiles.map((t) => (
+          <figure key={t.src}>
+            <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-line">
+              <Image src={t.src} alt={t.alt} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
+            </div>
+            <figcaption className="mt-3 text-sm font-semibold tracking-wide text-gold">{t.label}</figcaption>
+          </figure>
+        ))}
       </div>
       <p className="mt-6 text-center text-sm text-muted">More rooms coming soon.</p>
     </section>

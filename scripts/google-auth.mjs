@@ -1,4 +1,4 @@
-// One-time helper: gets a Google refresh token for the calendar owner (Nick).
+// One-time helper: gets a Google refresh token for Nick (Calendar + Meet + Gmail send).
 // Run:  node --env-file=.env scripts/google-auth.mjs
 // Then sign in as the Google account whose calendar should hold the consults.
 import http from "node:http";
@@ -14,6 +14,7 @@ const redirectUri = `http://localhost:${PORT}`;
 const scope = [
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.freebusy",
+  "https://www.googleapis.com/auth/gmail.send", // confirmation + reminder emails from Nick's Gmail
 ].join(" ");
 
 const authUrl =

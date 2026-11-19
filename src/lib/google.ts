@@ -95,6 +95,47 @@ export async function createMeetEvent(args: {
   return { eventId: event.id, meetUrl: meetLinkOf(event) };
 }
 
+const b64url = (s: string | Buffer) => Buffer.from(s).toString("base64url");
+// RFC 2047 encoded-word, so names with accents or emoji survive in headers.
+const encodeHeader = (s: string) => (/^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${Buffer.from(s).toString("base64")}?=`);
+const stripCrlf = (s: string) => s.replace(/[\r\n]+/g, " ");
+
+/**
+ * Send an HTML email from Nick's Gmail through the Gmail API.
+ * Needs the gmail.send scope on GOOGLE_REFRESH_TOKEN (see docs/google-setup.md).
+ * Returns false when Google isn't configured, so callers can fall back.
+ */
+export async function sendGmail(args: { to: string; subject: string; html: string; replyTo?: string }): Promise<boolean> {
+  const env = googleEnv();
+  if (!env) return false;
+  const token = await accessToken(env);
+  // Optional, e.g. "HomeFlow <nick@gmail.com>" (must be Nick's address or a Gmail alias).
+  // Unset: Gmail uses the account's own name and address.
+  const from = process.env.GMAIL_FROM?.trim();
+  const fromHeader = from?.match(/^(.*?)\s*<([^>]+)>$/);
+  const headers = [
+    ...(from
+      ? [fromHeader ? `From: ${encodeHeader(stripCrlf(fromHeader[1].replace(/^"|"$/g, "")))} <${stripCrlf(fromHeader[2])}>` : `From: ${stripCrlf(from)}`]
+      : []),
+    `To: ${stripCrlf(args.to)}`,
+    ...(args.replyTo ? [`Reply-To: ${stripCrlf(args.replyTo)}`] : []),
+    `Subject: ${encodeHeader(stripCrlf(args.subject))}`,
+    "MIME-Version: 1.0",
+    'Content-Type: text/html; charset="UTF-8"',
+    "Content-Transfer-Encoding: base64",
+  ];
+  const body = Buffer.from(args.html).toString("base64").replace(/(.{76})/g, "$1\r\n");
+  const raw = b64url(`${headers.join("\r\n")}\r\n\r\n${body}`);
+  const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Gmail send failed: ${res.status} ${await res.text()}`);
+  return true;
+}
+
 /** Busy periods on Nick's Google Calendar, so personal events block slots. */
 export async function getGoogleBusy(fromIso: string, toIso: string): Promise<{ s: number; e: number }[]> {
   const env = googleEnv();
