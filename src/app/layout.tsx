@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Manrope, Montserrat } from "next/font/google";
 import "./globals.css";
 
@@ -13,6 +13,9 @@ const montserrat = Montserrat({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
 });
+
+// The design is light-only. Declaring it stops browsers that auto-darken pages from inverting it.
+export const viewport: Viewport = { colorScheme: "only light", themeColor: "#fbf8f2" };
 
 export const metadata: Metadata = {
   title: "HomeFlow | Residential Operations Management, San Francisco & the Peninsula",
