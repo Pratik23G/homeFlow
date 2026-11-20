@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { getSlotsForDate, type Slot } from "@/lib/availability";
-import { sendClientConfirmation, sendOwnerNotification } from "@/lib/email";
+import { ownerPhotosUrl, sendClientConfirmation, sendOwnerNotification } from "@/lib/email";
 import { createMeetEvent } from "@/lib/google";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -119,7 +119,7 @@ export async function createConsultation(input: ConsultInput): Promise<ConsultRe
       const event = await createMeetEvent({
         requestId: consult.id,
         summary: `HomeFlow complimentary assessment: ${name}`,
-        description: `What the client wants fixed:\n${description}\n\nPhone: ${phone}\nCity: ${cityRow.name}`,
+        description: `What the client wants fixed:\n${description}\n\nPhone: ${phone}\nCity: ${cityRow.name}${input.photos.length ? `\nPhotos: ${ownerPhotosUrl(consult.id)}` : ""}`,
         startsAt: slot.startsAt,
         endsAt: slot.endsAt,
         attendeeEmail: email,
@@ -151,6 +151,7 @@ export async function createConsultation(input: ConsultInput): Promise<ConsultRe
     const results = await Promise.allSettled([
       sendClientConfirmation({ consultationId: consult.id, to: email, name, startsAt: slot.startsAt, endsAt: slot.endsAt, meetUrl }),
       sendOwnerNotification({
+        consultationId: consult.id,
         name,
         email,
         phone,

@@ -97,6 +97,7 @@ export async function sendClientConfirmation(a: {
 }
 
 export async function sendOwnerNotification(a: {
+  consultationId: string;
   name: string;
   email: string;
   phone: string;
@@ -117,7 +118,7 @@ export async function sendOwnerNotification(a: {
       <p><strong>${esc(when(a.startsAt))}</strong></p>
       <p>${esc(a.name)}<br>${esc(a.email)}<br>${esc(a.phone)}<br>${esc(a.city)}</p>
       <p style="color:#6b655c">${esc(a.description).replace(/\n/g, "<br>")}</p>
-      <p style="color:#6b655c;font-size:13px">${a.photoCount} photo(s) attached to the booking.</p>
+      ${a.photoCount > 0 ? `<p style="margin:16px 0 8px">${button(ownerPhotosUrl(a.consultationId), `View ${a.photoCount} photo${a.photoCount === 1 ? "" : "s"}`)}</p>` : ""}
       ${a.meetUrl ? `<p>${button(a.meetUrl, "Join the video call")}</p>` : ""}`),
   });
 }
@@ -203,6 +204,9 @@ export async function sendOwnerProjectRequest(a: {
 
 export const manageUrl = (consultationId: string) =>
   `${SITE}/manage/${consultationId}?t=${signLink(consultationId, "client")}`;
+
+/** Page that shows the client's photos (private bucket, so it mints fresh links on each visit). */
+export const ownerPhotosUrl = (id: string) => `${SITE}/owner/${id}/photos?t=${signLink(id, "owner")}`;
 
 export type OwnerAction = "done" | "noshow" | "skip";
 const ownerUrl = (id: string, action: OwnerAction) =>
