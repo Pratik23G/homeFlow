@@ -1,31 +1,21 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Footer } from "@/components/Footer";
-import { Logo } from "@/components/Logo";
+import { Nav } from "@/components/Nav";
 import { BookingForm } from "@/components/booking/BookingForm";
 
 export const metadata: Metadata = {
-  title: "Book a free kitchen consult | HomeFlow",
+  title: "Book a complimentary assessment | HomeFlow",
 };
 
 export default function BookPage() {
   return (
     <>
-      <header className="border-b border-line">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Link href="/" aria-label="HomeFlow home">
-            <Logo />
-          </Link>
-          <Link href="/" className="text-sm text-white/80 hover:text-gold">
-            ← Back to site
-          </Link>
-        </div>
-      </header>
+      <Nav />
       <main className="mx-auto max-w-6xl px-5 py-12">
-        <h1 className="font-serif text-4xl font-semibold sm:text-5xl">Book a free kitchen consult</h1>
+        <h1 className="font-serif text-4xl font-medium leading-[1.1] sm:text-5xl">Book a complimentary assessment</h1>
         <p className="mt-3 max-w-2xl text-muted">
-          A 30-minute video call on Google Meet. Tell Nick what you want fixed and he&apos;ll give you an
-          estimate. No payment needed.
+          A 30-minute video call on Google Meet. Tell Nicholas about your project and share photos if you have them, and he will
+          help you work out the next steps. No payment needed.
         </p>
         <BookingForm />
       </main>

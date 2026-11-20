@@ -1,37 +1,45 @@
-import { Button } from "../Button";
-import Image from "next/image";
+import { Gallery } from "../Gallery";
+import { Reveal } from "../Reveal";
 import { SectionHeading } from "../SectionHeading";
+import { INSTAGRAM_URL } from "@/lib/content";
 
-const tiles = [
-  { src: "/images/stock/organized-drawer.webp", alt: "Utensil drawer with wooden dividers", label: "Organized storage" },
-  { src: "/images/stock/faucet.webp", alt: "Close-up of a chrome kitchen faucet", label: "Updated fixtures" },
-  { src: "/images/stock/kitchen-layout.webp", alt: "Modern white kitchen with a central island", label: "Better layouts" },
+const works = [
+  { src: "/images/works/wall-lights.jpeg", alt: "Lit decorative wall fixtures on a textured wall", label: "Lighting installs" },
+  { src: "/images/works/roman-shade.jpeg", alt: "Roman shade being adjusted above a bright window", label: "Window treatments" },
+  { src: "/images/works/tv-mounted.jpeg", alt: "Wall-mounted TV above a wooden dresser in a paneled room", label: "TV mounting and wire concealment" },
+  { src: "/images/works/tv-mount-level.jpeg", alt: "TV mount bracket being leveled on a paneled wall", label: "Level, every time" },
+  { src: "/images/works/hanging-art.jpeg", alt: "Framed photo being hung on a wall", label: "Art and décor hanging" },
+  { src: "/images/works/neon-sign.jpeg", alt: "Illuminated sign mounted in a gold alcove", label: "Illuminated displays" },
+  { src: "/images/works/plumbing.jpeg", alt: "Copper and PVC pipe fitting", label: "Fixtures and plumbing" },
+  { src: "/images/works/appliance-repair.jpeg", alt: "Cordless drill opening up an appliance for repair", label: "Equipment care" },
 ];
 
 export function Showcase() {
   return (
-    <section className="mx-auto max-w-6xl px-5 py-16">
-      <div className="grid items-end gap-8 lg:grid-cols-2">
-        <SectionHeading
-          eyebrow="More than a handyman"
-          title="Practical solutions for a better kitchen."
-          intro="Sometimes the answer is a repair. Sometimes it's reorganizing a cabinet or moving things to where you actually use them. Nick finds the friction and fixes it."
-        />
-        <div className="lg:text-right">
-          <Button href="/book">Book your free consult →</Button>
+    <section id="work" className="border-y border-line bg-cream px-5 py-20">
+      <div className="mx-auto max-w-6xl">
+        <Reveal>
+          <SectionHeading
+            eyebrow="Selected work"
+            title="A closer look at Nicholas's work"
+            intro="A selection of recent HomeFlow projects. Swipe or use the arrows."
+            center
+          />
+        </Reveal>
+        <div className="mt-12">
+          <Gallery items={works} />
+        </div>
+        <div className="mt-10 text-center">
+          <a
+            href={INSTAGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-12 items-center justify-center rounded-full border border-gold px-6 text-[15px] font-medium text-gold-dark transition-colors duration-150 hover:bg-gold hover:text-charcoal"
+          >
+            View our work on Instagram
+          </a>
         </div>
       </div>
-      <div className="mt-10 grid gap-5 sm:grid-cols-3">
-        {tiles.map((t) => (
-          <figure key={t.src}>
-            <div className="relative aspect-[4/5] overflow-hidden rounded-lg border border-line">
-              <Image src={t.src} alt={t.alt} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
-            </div>
-            <figcaption className="mt-3 text-sm font-semibold tracking-wide text-gold">{t.label}</figcaption>
-          </figure>
-        ))}
-      </div>
-      <p className="mt-6 text-center text-sm text-muted">More rooms coming soon.</p>
     </section>
   );
 }
