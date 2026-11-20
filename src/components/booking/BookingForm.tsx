@@ -52,7 +52,7 @@ const subscribe = () => () => {};
 /** Render only on the client so "today" never mismatches server HTML. */
 export function BookingForm() {
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
-  if (!mounted) return <div className="mt-10 h-96 animate-pulse rounded-lg bg-ink" />;
+  if (!mounted) return <div className="mt-10 h-96 animate-pulse rounded-lg bg-cream" />;
   return <BookingFormInner today={startOfDay(new Date())} />;
 }
 
@@ -129,15 +129,15 @@ function BookingFormInner({ today }: { today: Date }) {
   if (done) {
     return (
       <div className="mt-10 rounded-lg border border-gold p-8">
-        <h2 className="font-serif text-3xl font-semibold">Request received</h2>
+        <h2 className="font-serif text-3xl font-medium">Request received</h2>
         <p className="mt-3 text-muted">
           Your free consult is booked for {fmtSlotDay(done.startsAt)} at {fmtSlot(done.startsAt)} Pacific.
           {done.meetUrl
             ? " Save the link below or add it to your calendar. Google also emails you an invite."
-            : " Nick will email you the video call link shortly."}
+            : " Nicholas will email you the video call link shortly."}
         </p>
         {done.meetUrl && (
-          <a href={done.meetUrl} className="mt-4 inline-block break-all text-gold underline">
+          <a href={done.meetUrl} className="mt-4 inline-block break-all text-gold-dark underline">
             {done.meetUrl}
           </a>
         )}
@@ -146,21 +146,21 @@ function BookingFormInner({ today }: { today: Date }) {
             href={googleCalendarUrl(done.startsAt, done.endsAt, done.meetUrl)}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full bg-gold px-6 py-3 text-center text-sm font-semibold text-black hover:bg-gold-dark"
+            className="rounded-full bg-gold px-6 py-3 text-center text-sm font-medium text-charcoal transition-colors duration-150 hover:bg-gold-dark hover:text-white"
           >
             Add to Google Calendar
           </a>
           <button
             type="button"
             onClick={() => downloadIcs(done.startsAt, done.endsAt, done.meetUrl)}
-            className="rounded-full border border-gold px-6 py-3 text-sm font-semibold text-gold hover:bg-gold hover:text-black"
+            className="rounded-full border border-gold px-6 py-3 text-sm font-medium text-gold-dark transition-colors duration-150 hover:bg-gold hover:text-charcoal"
           >
             Apple / Outlook (.ics)
           </button>
         </div>
         {done.photosFailed && (
-          <p className="mt-3 text-sm text-gold">
-            Some photos did not upload. You can show them to Nick on the call or reply to his email with them.
+          <p className="mt-3 text-sm text-gold-dark">
+            Some photos did not upload. You can show them to Nicholas on the call or reply to his email with them.
           </p>
         )}
       </div>
@@ -168,7 +168,7 @@ function BookingFormInner({ today }: { today: Date }) {
   }
 
   const input =
-    "w-full rounded-md border border-line bg-ink px-4 py-3 text-white placeholder:text-white/40 focus:border-gold focus:outline-none";
+    "w-full rounded-lg border border-line bg-cream px-4 py-3 text-charcoal placeholder:text-charcoal/40 focus:border-gold focus:outline-none";
   const label = "mb-1.5 block text-sm font-medium";
 
   return (
@@ -180,26 +180,26 @@ function BookingFormInner({ today }: { today: Date }) {
         <input name="website" tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
         {/* 1. Day */}
         <section>
-          <h2 className="mb-4 font-serif text-2xl font-semibold">1. Pick a day</h2>
+          <h2 className="mb-4 font-serif text-2xl font-medium">1. Pick a day</h2>
           <div className="max-w-md rounded-lg border border-line p-4">
             <div className="mb-3 flex items-center justify-between">
               <button
                 type="button"
                 disabled={!canPrev}
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
-                className="rounded px-3 py-1 text-gold disabled:opacity-30"
+                className="rounded px-3 py-1 text-gold-dark disabled:opacity-30"
                 aria-label="Previous month"
               >
                 ←
               </button>
-              <span className="font-semibold">
+              <span className="font-medium">
                 {month.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
               </span>
               <button
                 type="button"
                 disabled={!canNext}
                 onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
-                className="rounded px-3 py-1 text-gold disabled:opacity-30"
+                className="rounded px-3 py-1 text-gold-dark disabled:opacity-30"
                 aria-label="Next month"
               >
                 →
@@ -216,11 +216,11 @@ function BookingFormInner({ today }: { today: Date }) {
                     type="button"
                     disabled={!isBookable(d)}
                     onClick={() => pickDay(d)}
-                    className={`aspect-square rounded-md text-sm transition-colors disabled:text-white/20 ${
+                    className={`aspect-square rounded-md text-sm transition-colors disabled:text-charcoal/25 ${
                       day && sameDay(day, d)
-                        ? "bg-gold font-semibold text-black"
+                        ? "bg-gold font-medium text-charcoal"
                         : isBookable(d)
-                          ? "text-white hover:bg-gold/20"
+                          ? "text-charcoal hover:bg-gold/20"
                           : ""
                     }`}
                   >
@@ -237,7 +237,7 @@ function BookingFormInner({ today }: { today: Date }) {
 
         {/* 2. Time */}
         <section>
-          <h2 className="mb-4 font-serif text-2xl font-semibold">2. Pick a 30-minute time</h2>
+          <h2 className="mb-4 font-serif text-2xl font-medium">2. Pick a 30-minute time</h2>
           {!day ? (
             <p className="text-sm text-muted">Choose a day first.</p>
           ) : slots === null ? (
@@ -251,9 +251,9 @@ function BookingFormInner({ today }: { today: Date }) {
                   key={s.startsAt}
                   type="button"
                   onClick={() => setSlot(s)}
-                  className={`rounded-md border px-3 py-2.5 text-sm transition-colors ${
+                  className={`rounded-lg border px-3 py-2.5 text-sm transition-colors duration-150 ${
                     slot?.startsAt === s.startsAt
-                      ? "border-gold bg-gold font-semibold text-black"
+                      ? "border-gold bg-gold font-medium text-charcoal"
                       : "border-line hover:border-gold"
                   }`}
                 >
@@ -267,7 +267,7 @@ function BookingFormInner({ today }: { today: Date }) {
 
         {/* 3. Details */}
         <section>
-          <h2 className="mb-4 font-serif text-2xl font-semibold">3. Your details</h2>
+          <h2 className="mb-4 font-serif text-2xl font-medium">3. Your details</h2>
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
               <label className={label} htmlFor="name">Name</label>
@@ -291,17 +291,17 @@ function BookingFormInner({ today }: { today: Date }) {
                 <option value="other">Other / not listed</option>
               </select>
               {city === "other" && (
-                <p className="mt-2 text-sm text-gold">
+                <p className="mt-2 text-sm text-red-800">
                   We&apos;re sorry, that&apos;s outside our area for now. We serve the SF Peninsula, San Francisco to Palo Alto.
                 </p>
               )}
             </div>
             <div className="sm:col-span-2">
               <label className={label} htmlFor="what">What do you want fixed?</label>
-              <textarea id="what" name="what" required maxLength={2000} rows={5} className={input} placeholder="e.g. Pantry is a mess, cabinet door hangs crooked, want better counter flow..." />
+              <textarea id="what" name="what" required maxLength={2000} rows={5} className={input} placeholder="e.g. Mount a 65-inch TV and hide the cables, hang three mirrors in the hallway" />
             </div>
             <div className="sm:col-span-2">
-              <label className={label} htmlFor="photos">Kitchen photos (optional)</label>
+              <label className={label} htmlFor="photos">Photos (optional)</label>
               <input
                 id="photos"
                 type="file"
@@ -318,24 +318,24 @@ function BookingFormInner({ today }: { today: Date }) {
                   setPhotoError(null);
                   setPhotos(files);
                 }}
-                className="block w-full text-sm text-muted file:mr-4 file:rounded-full file:border-0 file:bg-gold file:px-4 file:py-2 file:font-semibold file:text-black"
+                className="block w-full text-sm text-muted file:mr-4 file:rounded-full file:border-0 file:bg-gold file:px-4 file:py-2 file:font-medium file:text-charcoal"
               />
               {photos.length > 0 && (
                 <p className="mt-2 text-xs text-muted">{photos.length} photo(s) selected</p>
               )}
-              {photoError && <p className="mt-2 text-sm text-gold">{photoError}</p>}
+              {photoError && <p role="alert" className="mt-2 text-sm text-red-800">{photoError}</p>}
             </div>
           </div>
         </section>
       </div>
 
       {/* Summary */}
-      <aside className="h-fit rounded-lg border border-gold/50 bg-ink p-6 lg:sticky lg:top-24">
-        <h2 className="font-serif text-2xl font-semibold">Summary</h2>
+      <aside className="h-fit rounded-xl border border-line bg-cream p-6 lg:sticky lg:top-24">
+        <h2 className="font-serif text-2xl font-medium">Summary</h2>
         <dl className="mt-4 space-y-3 text-sm">
           <div>
             <dt className="text-muted">Service</dt>
-            <dd>Free kitchen consult · 30-min video call</dd>
+            <dd>Complimentary assessment, 30-minute video call</dd>
           </div>
           <div>
             <dt className="text-muted">When</dt>
@@ -347,17 +347,17 @@ function BookingFormInner({ today }: { today: Date }) {
           </div>
           <div>
             <dt className="text-muted">Cost</dt>
-            <dd className="font-semibold text-gold">$0, no payment required</dd>
+            <dd className="font-medium text-gold-dark">$0, no payment required</dd>
           </div>
         </dl>
         <button
           type="submit"
           disabled={!day || !slot || city === "other" || submitting}
-          className="mt-6 w-full rounded-full bg-gold px-6 py-3 font-semibold text-black transition-colors hover:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-40"
+          className="mt-6 w-full h-12 rounded-full bg-gold px-6 font-medium text-charcoal transition-colors hover:bg-gold-dark hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {submitting ? "Sending..." : "Request free consult"}
+          {submitting ? "Sending..." : "Request assessment"}
         </button>
-        {error && <p className="mt-3 text-sm text-gold">{error}</p>}
+        {error && <p role="alert" className="mt-3 text-sm text-red-800">{error}</p>}
       </aside>
     </form>
   );

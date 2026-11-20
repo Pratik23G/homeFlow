@@ -1,33 +1,52 @@
+import { PaymentMethods } from "../PaymentMethods";
+import { Reveal } from "../Reveal";
 import { SectionHeading } from "../SectionHeading";
-import { CANCEL_HOURS, DEPOSIT, HOURLY_RATE } from "@/lib/content";
+import { CANCEL_HOURS, DEPOSIT } from "@/lib/content";
 
 export function Pricing() {
-  const cards = [
-    { label: "Consult", value: "$0", note: "30-minute video call" },
-    { label: "Booking deposit", value: `$${DEPOSIT}`, note: "Applied to your bill" },
-    { label: "Labor", value: `~$${HOURLY_RATE}/hr`, note: "Ballpark; final price depends on scope" },
-  ];
   return (
-    <section id="pricing" className="border-y border-line bg-ink px-5 py-16">
-      <div className="mx-auto max-w-6xl">
-        <SectionHeading eyebrow="Pricing" title="Simple, upfront pricing" center />
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {cards.map((c) => (
-            <div key={c.label} className="rounded-lg border border-line p-8 text-center">
-              <p className="text-sm tracking-widest text-muted">{c.label.toUpperCase()}</p>
-              <p className="mt-3 font-serif text-5xl font-semibold text-gold">{c.value}</p>
-              <p className="mt-2 text-sm text-muted">{c.note}</p>
+    <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
+      <Reveal>
+        <SectionHeading
+          eyebrow="Pricing"
+          title="Clear, project-based pricing."
+          intro="Every project is unique. You get a personalized estimate based on the scope of work, agreed before work begins."
+          center
+        />
+      </Reveal>
+      <div className="mx-auto mt-12 grid max-w-3xl gap-6 md:grid-cols-2">
+        <div className="rounded-xl border border-gold bg-cream p-10 text-center">
+          <p className="text-sm font-medium text-muted">Consultation</p>
+          <p className="mt-3 font-serif text-7xl font-medium text-gold-dark">$0</p>
+          <p className="mt-2 text-sm text-muted">Complimentary 30-minute video call</p>
+        </div>
+        <div className="rounded-xl border border-line bg-cream p-10 text-center">
+          <p className="text-sm font-medium text-muted">Booking deposit</p>
+          <p className="mt-3 font-serif text-7xl font-medium text-gold-dark">${DEPOSIT}</p>
+          <p className="mt-2 text-sm text-muted">Applied to your final bill</p>
+        </div>
+      </div>
+      <div className="mx-auto mt-8 max-w-3xl">
+        <p className="mb-3 text-center text-sm font-medium text-muted">Ways to pay</p>
+        <PaymentMethods />
+      </div>
+      <div className="mx-auto mt-8 max-w-3xl rounded-xl border border-line p-6 sm:p-8">
+        <h3 className="font-serif text-2xl font-medium">Cancellation and rescheduling</h3>
+        <dl className="mt-4 divide-y divide-line text-sm">
+          {[
+            [`${CANCEL_HOURS}+ hours before`, "Deposit refunded"],
+            [`Within ${CANCEL_HOURS} hours`, "Deposit kept"],
+            ["Reschedule", "Your deposit becomes credit toward the new booking"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:gap-6">
+              <dt className="font-medium sm:w-48 sm:shrink-0">{k}</dt>
+              <dd className="text-muted">{v}</dd>
             </div>
           ))}
-        </div>
-        <div className="mx-auto mt-10 max-w-3xl rounded-lg border border-gold/40 p-6">
-          <h3 className="font-serif text-2xl font-semibold">Cancellation &amp; rescheduling</h3>
-          <ul className="mt-3 space-y-2 text-sm text-muted">
-            <li><span className="text-white">{CANCEL_HOURS}+ hours before:</span> deposit refunded.</li>
-            <li><span className="text-white">Within {CANCEL_HOURS} hours:</span> deposit kept.</li>
-            <li><span className="text-white">Reschedule:</span> your deposit becomes credit toward the new booking.</li>
-          </ul>
-        </div>
+        </dl>
+        <p className="mt-5 text-sm text-muted">
+          Complimentary consultations are video calls. Any on-site diagnostic or assessment visit is billable and quoted in advance.
+        </p>
       </div>
     </section>
   );

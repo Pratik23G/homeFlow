@@ -59,7 +59,7 @@ export async function getSlotsForDate(dateStr: string): Promise<Slot[]> {
     s: new Date(b.starts_at).getTime(),
     e: new Date(b.ends_at).getTime(),
   }));
-  // Nick's own Google Calendar. If Google is down, fall back to the database only.
+  // Nicholas's own Google Calendar. If Google is down, fall back to the database only.
   try {
     busy.push(...(await getGoogleBusy(from, to)));
   } catch (e) {

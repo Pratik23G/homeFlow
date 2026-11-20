@@ -57,7 +57,7 @@ export async function createConsultation(input: ConsultInput): Promise<ConsultRe
   if (!phone || phone.replace(/\D/g, "").length < 10 || phone.length > 30)
     return fail("invalid", "Please enter a valid phone number.");
   if (!description || description.length > 2000)
-    return fail("invalid", "Please tell Nick what you want fixed (up to 2000 characters).");
+    return fail("invalid", "Please tell Nicholas what you want fixed (up to 2000 characters).");
   if (!Array.isArray(input.photos) || input.photos.length > MAX_PHOTOS)
     return fail("invalid", `You can add up to ${MAX_PHOTOS} photos.`);
   for (const p of input.photos) {
@@ -118,7 +118,7 @@ export async function createConsultation(input: ConsultInput): Promise<ConsultRe
     try {
       const event = await createMeetEvent({
         requestId: consult.id,
-        summary: `HomeFlow free kitchen consult: ${name}`,
+        summary: `HomeFlow complimentary assessment: ${name}`,
         description: `What the client wants fixed:\n${description}\n\nPhone: ${phone}\nCity: ${cityRow.name}`,
         startsAt: slot.startsAt,
         endsAt: slot.endsAt,
@@ -149,7 +149,7 @@ export async function createConsultation(input: ConsultInput): Promise<ConsultRe
 
     // Emails are best effort too: a failed send is logged, never shown as a failed booking.
     const results = await Promise.allSettled([
-      sendClientConfirmation({ to: email, name, startsAt: slot.startsAt, endsAt: slot.endsAt, meetUrl }),
+      sendClientConfirmation({ consultationId: consult.id, to: email, name, startsAt: slot.startsAt, endsAt: slot.endsAt, meetUrl }),
       sendOwnerNotification({
         name,
         email,

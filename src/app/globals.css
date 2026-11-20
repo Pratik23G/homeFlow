@@ -1,24 +1,75 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-black: #000000;
-  --color-white: #ffffff;
+  --color-paper: #fbf8f2;
+  --color-cream: #f3ece0;
+  --color-charcoal: #2b2926;
   --color-gold: #c68b4a;
-  --color-gold-dark: #a8733a;
-  --color-ink: #0d0d0d;
-  --color-line: #2a2a2a;
-  --color-muted: #b3b3b3;
+  --color-gold-dark: #8f5f28;
+  --color-line: #e3d9c8;
+  --color-muted: #6b655c;
   --font-serif: var(--font-cormorant);
   --font-sans: var(--font-manrope);
   --font-brand: var(--font-montserrat);
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body {
-  background: var(--color-black);
-  color: var(--color-white);
+  background: var(--color-paper);
+  color: var(--color-charcoal);
   font-family: var(--font-manrope), system-ui, sans-serif;
 }
 
+/* Cormorant defaults to old-style figures ("$80" reads "$8o", "30" reads "3o"). Use lining figures. */
+.font-serif, .font-brand, h1, h2, h3 {
+  font-variant-numeric: lining-nums;
+}
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
 html {
   scroll-behavior: smooth;
+}
+
+section[id] {
+  scroll-margin-top: 4.5rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold-dark);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- motion: one short fade-and-rise ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.45s var(--ease-settle), transform 0.45s var(--ease-settle);
+}
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.animate-rise { opacity: 0; animation: rise 0.5s var(--ease-settle) forwards; }
+
+/* ---------- hero photo showcase ---------- */
+@keyframes kenburns { from { transform: scale(1.04); } to { transform: scale(1); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.hero-photo { animation: kenburns 1.6s var(--ease-settle) both; }
+.hotspot-card { animation: pop-in 0.2s var(--ease-settle) both; }
+
+/* ---------- gallery ---------- */
+.gallery-track { scrollbar-width: none; }
+.gallery-track::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .animate-rise { opacity: 1; transform: none; animation: none; transition: none; }
+  .hero-photo, .hotspot-card { animation: none; }
+  html { scroll-behavior: auto; }
 }

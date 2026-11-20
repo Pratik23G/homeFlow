@@ -95,13 +95,45 @@ export async function createMeetEvent(args: {
   return { eventId: event.id, meetUrl: meetLinkOf(event) };
 }
 
+/** Move an existing event to a new time; Google emails the client the update. */
+export async function updateEventTimes(eventId: string, startsAt: string, endsAt: string): Promise<boolean> {
+  const env = googleEnv();
+  if (!env) return false;
+  const token = await accessToken(env);
+  const res = await fetch(
+    `${CAL_URL}/calendars/${encodeURIComponent(env.calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=all`,
+    {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ start: { dateTime: startsAt }, end: { dateTime: endsAt } }),
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) throw new Error(`Google event update failed: ${res.status} ${await res.text()}`);
+  return true;
+}
+
+/** Delete an event (cancels the invite for the client). Already-gone events count as success. */
+export async function deleteEvent(eventId: string): Promise<boolean> {
+  const env = googleEnv();
+  if (!env) return false;
+  const token = await accessToken(env);
+  const res = await fetch(
+    `${CAL_URL}/calendars/${encodeURIComponent(env.calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=all`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+  );
+  if (!res.ok && res.status !== 404 && res.status !== 410)
+    throw new Error(`Google event delete failed: ${res.status} ${await res.text()}`);
+  return true;
+}
+
 const b64url = (s: string | Buffer) => Buffer.from(s).toString("base64url");
 // RFC 2047 encoded-word, so names with accents or emoji survive in headers.
 const encodeHeader = (s: string) => (/^[\x20-\x7e]*$/.test(s) ? s : `=?UTF-8?B?${Buffer.from(s).toString("base64")}?=`);
 const stripCrlf = (s: string) => s.replace(/[\r\n]+/g, " ");
 
 /**
- * Send an HTML email from Nick's Gmail through the Gmail API.
+ * Send an HTML email from Nicholas's Gmail through the Gmail API.
  * Needs the gmail.send scope on GOOGLE_REFRESH_TOKEN (see docs/google-setup.md).
  * Returns false when Google isn't configured, so callers can fall back.
  */
@@ -109,7 +141,7 @@ export async function sendGmail(args: { to: string; subject: string; html: strin
   const env = googleEnv();
   if (!env) return false;
   const token = await accessToken(env);
-  // Optional, e.g. "HomeFlow <nick@gmail.com>" (must be Nick's address or a Gmail alias).
+  // Optional, e.g. "HomeFlow <you@gmail.com>" (must be Nicholas's address or a Gmail alias).
   // Unset: Gmail uses the account's own name and address.
   const from = process.env.GMAIL_FROM?.trim();
   const fromHeader = from?.match(/^(.*?)\s*<([^>]+)>$/);
@@ -136,7 +168,7 @@ export async function sendGmail(args: { to: string; subject: string; html: strin
   return true;
 }
 
-/** Busy periods on Nick's Google Calendar, so personal events block slots. */
+/** Busy periods on Nicholas's Google Calendar, so personal events block slots. */
 export async function getGoogleBusy(fromIso: string, toIso: string): Promise<{ s: number; e: number }[]> {
   const env = googleEnv();
   if (!env) return [];

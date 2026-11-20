@@ -13,9 +13,9 @@ npx supabase link --project-ref <your-project-ref>
 npx supabase db push
 ```
 
-## Make Nick an admin
+## Make Nicholas an admin
 
-1. Auth → Users → add Nick's user (email + password).
+1. Auth → Users → add Nicholas's user (email + password).
 2. SQL Editor:
 ```sql
 insert into admin_users (user_id) values ('<nick-user-uuid>');

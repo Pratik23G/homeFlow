@@ -15,9 +15,9 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "HomeFlow | Kitchen organization & setup, SF Peninsula",
+  title: "HomeFlow | Residential Operations Management, San Francisco & the Peninsula",
   description:
-    "Make your home work for you. Free 30-minute video consult, then book Nick for kitchen organization, fixtures, repairs and layout fixes.",
+    "Art and mirror installation, lighting, wire concealment, espresso machine care, shelving and residential maintenance across San Francisco and the Peninsula. Book a complimentary assessment.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       data-scroll-behavior="smooth"
       className={`${cormorant.variable} ${manrope.variable} ${montserrat.variable} antialiased`}
     >
-      <body className="min-h-screen bg-black text-white">{children}</body>
+      <body className="min-h-screen bg-paper text-charcoal">{children}</body>
     </html>
   );
 }
